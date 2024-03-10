@@ -6,6 +6,19 @@ import pickle
 import os
 import json
 
+def authenticate_with_drive():
+    # Cargar client_secrets del archivo JSON
+    with open('client_secret_drive.json', 'r') as f:
+        client_secrets = json.load(f)
+
+    # Autenticación con Google Drive
+    gauth = GoogleAuth()
+    gauth.client_config = client_secrets['web']  # Establecer la configuración del cliente
+    gauth.LocalWebserverAuth()  # Creates local webserver and auto handles authentication
+    drive = GoogleDrive(gauth)
+
+    return drive
+
 def embed_document(file_id, drive):
     file = drive.CreateFile({'id': file_id})
     file.GetContentFile('temp.pdf')  # download file as 'temp.pdf'
@@ -37,11 +50,7 @@ def embed_document(file_id, drive):
     collection.insert_one({'file_name': file['title'], 'index': Binary(index_bytes)})
 
 def embed_all_pdf_docs():
-    # Cargar client_secrets del archivo JSON
-    with open('client_secret_drive.json', 'r') as f:
-        client_secrets = json.load(f)
-    gauth = GoogleAuth(settings={'client_config': client_secrets})
-    drive = GoogleDrive(gauth)
+    drive = authenticate_with_drive()
 
     # Get the directory ID from the environment variable
     directory_id = os.getenv('DIRECTORY_ID')
@@ -65,14 +74,7 @@ from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 
 def get_all_index_files():
-    # Cargar client_secrets del archivo JSON
-    with open('client_secret_drive.json', 'r') as f:
-        client_secrets = json.load(f)
-
-    # Autenticación con Google Drive
-    gauth = GoogleAuth(settings={'client_config': client_secrets})
-    gauth.LocalWebserverAuth()  # Creates local webserver and auto handles authentication
-    drive = GoogleDrive(gauth)
+    drive = authenticate_with_drive()
 
     # Obtener el ID del directorio de las variables de entorno
     directory_id = os.getenv('DIRECTORY_ID')
