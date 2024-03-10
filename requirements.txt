@@ -8,3 +8,4 @@ pypdf
 pymongo
 pickle-mixin
 python-dotenv
+PyDrive
