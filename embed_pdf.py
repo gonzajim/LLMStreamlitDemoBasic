@@ -58,9 +58,16 @@ def embed_all_pdf_docs():
     else:
         raise Exception("No PDF files found in the directory.")
     
+import json
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
+
 def get_all_index_files():
+    # Cargar client_secrets de las secrets
+    client_secrets = json.loads(os.getenv('CLIENT_SECRETS'))
+
     # Autenticación con Google Drive
-    gauth = GoogleAuth()
+    gauth = GoogleAuth(settings={'client_config': client_secrets})
     gauth.LocalWebserverAuth()  # Creates local webserver and auto handles authentication
     drive = GoogleDrive(gauth)
 
