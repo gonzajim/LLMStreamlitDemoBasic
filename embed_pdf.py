@@ -57,3 +57,20 @@ def embed_all_pdf_docs():
             print("Done!")
     else:
         raise Exception("No PDF files found in the directory.")
+    
+def get_all_index_files():
+    # Autenticación con Google Drive
+    gauth = GoogleAuth()
+    gauth.LocalWebserverAuth()  # Creates local webserver and auto handles authentication
+    drive = GoogleDrive(gauth)
+
+    # Obtener el ID del directorio de las variables de entorno
+    directory_id = os.getenv('DIRECTORY_ID')
+
+    # Listar todos los archivos en el directorio
+    file_list = drive.ListFile({'q': f"'{directory_id}' in parents and trashed=false"}).GetList()
+
+    # Obtener los nombres de los archivos
+    file_names = [file['title'] for file in file_list]
+
+    return file_names
