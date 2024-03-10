@@ -9,31 +9,36 @@ from llm_helper import get_agent_chain, get_lc_oai_tools
 
 with st.sidebar:
     openai_api_key = st.secrets["OPENAI_API_KEY"]
+
     "[Get an OpenAI API key](https://platform.openai.com/account/api-keys)"
     "[View the source code](https://github.com/streamlit/llm-examples/blob/main/pages/2_Chat_with_search.py)"
     "[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/streamlit/llm-examples?quickstart=1)"
 
-st.title("🔎 LangChain - Chat with search")
+    default_text = ""
+    user_instruction_text = st.text_area(
+        "Instrucciones para el usuario",
+        default_text,
+    )
+st.title("🔎 UCLM - RECAVA RAG Chatbot")
 
 """
-In this example, we're using `StreamlitCallbackHandler` to display the thoughts and actions of an agent in an interactive Streamlit app.
-Try more LangChain 🤝 Streamlit Agent examples at [github.com/langchain-ai/streamlit-agent](https://github.com/langchain-ai/streamlit-agent).
+Este chat está creado con streamlit + langchain + openai + mongodb
 """
 
 if "messages" not in st.session_state:
     st.session_state["messages"] = [
-        {"role": "assistant", "content": "Hi, I'm a chatbot who can search the web. How can I help you?"}
+        {"role": "assistant", "content": "Hola, soy el asistente del observatorio de la UCLM, en qué puedo ayudarte?"}
     ]
 
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
 
-if prompt := st.chat_input(placeholder="Who won the Women's U.S. Open in 2018?"):
+if prompt := st.chat_input(placeholder="Puedes decirme algún ejemplo de ayuda que puedes proporcionar?"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
 
     if not openai_api_key:
-        st.info("Please add your OpenAI API key to continue.")
+        st.info("Por favor, añade tu clave de OPENAI para continuar.")
         st.stop()
 
     llm = ChatOpenAI(model_name="gpt-3.5-turbo-1106", openai_api_key=openai_api_key, streaming=True)
@@ -42,7 +47,7 @@ if prompt := st.chat_input(placeholder="Who won the Women's U.S. Open in 2018?")
 
     agent_prompt = ChatPromptTemplate.from_messages(
         [
-            ("system", "You are a helpful assistant, use the search tool to answer the user's question and cite only the page number when you use information coming (like [p1]) from the source document. Always use the content from the source document to answer the user's question. If you need to compare multiple subjects, search them one by one."),
+            ("system", user_instruction_text),
             ("user", "{input}"),
             MessagesPlaceholder(variable_name="agent_scratchpad"),
         ]

@@ -1,14 +1,16 @@
-from langchain.document_loaders import PagedPDFSplitter
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
-
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
+from pymongo import MongoClient
+from bson.binary import Binary
+import pickle
 import os
+import json
 
-
-def embed_document(file_name, file_folder="pdf", embedding_folder="index"):
-    file_path = f"{file_folder}/{file_name}"
-    loader = PagedPDFSplitter(file_path)
+def embed_document(file_id, drive):
+    file = drive.CreateFile({'id': file_id})
+    file.GetContentFile('temp.pdf')  # download file as 'temp.pdf'
+    
+    loader = PagedPDFSplitter('temp.pdf')
     source_pages = loader.load_and_split()
 
     embedding_func = OpenAIEmbeddings()
@@ -21,50 +23,37 @@ def embed_document(file_name, file_folder="pdf", embedding_folder="index"):
     )
     source_chunks = text_splitter.split_documents(source_pages)
     search_index = FAISS.from_documents(source_chunks, embedding_func)
-    search_index.save_local(
-        folder_path=embedding_folder, index_name=file_name + ".index"
-    )
 
+    # Connect to MongoDB Atlas
+    username = os.getenv('MONGODB_USERNAME')
+    password = os.getenv('MONGODB_PASSWORD')
+
+    client = MongoClient(f"mongodb+srv://{username}:{password}@cluster0.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
+    db = client['mydatabase']
+    collection = db['mycollection']
+
+    # Convert the search index to bytes and store it in MongoDB
+    index_bytes = pickle.dumps(search_index)
+    collection.insert_one({'file_name': file['title'], 'index': Binary(index_bytes)})
 
 def embed_all_pdf_docs():
-    # Define the directory path
-    pdf_directory = "pdf"
+    client_secrets = json.loads(os.getenv('CLIENT_SECRETS'))
+    gauth = GoogleAuth(settings={'client_config': client_secrets})
+    drive = GoogleDrive(gauth)
 
-    # Check if the directory exists
-    if os.path.exists(pdf_directory):
-        # List all PDF files in the directory
-        pdf_files = [
-            file for file in os.listdir(pdf_directory) if file.endswith(".pdf")
-        ]
+    # Get the directory ID from the environment variable
+    directory_id = os.getenv('DIRECTORY_ID')
 
-        if pdf_files:
-            for pdf_file in pdf_files:
-                print(f"Embedding {pdf_file}...")
-                embed_document(file_name=pdf_file, file_folder=pdf_directory)
-                print("Done!")
-        else:
-            raise Exception("No PDF files found in the directory.")
+    # Get the list of all files in the specified directory of Google Drive
+    file_list = drive.ListFile({'q': f"'{directory_id}' in parents"}).GetList()
+
+    # Filter the list to only include PDF files
+    pdf_files = [file for file in file_list if file['title'].endswith('.pdf')]
+
+    if pdf_files:
+        for pdf_file in pdf_files:
+            print(f"Embedding {pdf_file['title']}...")
+            embed_document(file_id=pdf_file['id'], drive=drive)
+            print("Done!")
     else:
-        raise Exception(f"Directory '{pdf_directory}' does not exist.")
-
-
-def get_all_index_files():
-    # Define the directory path
-    index_directory = "index"
-
-    # Check if the directory exists
-    if os.path.exists(index_directory):
-        # List all index files in the directory
-        postfix = ".index.faiss"
-        index_files = [
-            file.replace(postfix, "")
-            for file in os.listdir(index_directory)
-            if file.endswith(postfix)
-        ]
-
-        if index_files:
-            return index_files
-        else:
-            raise Exception("No index files found in the directory.")
-    else:
-        raise Exception(f"Directory '{index_directory}' does not exist.")
+        raise Exception("No PDF files found in the directory.")

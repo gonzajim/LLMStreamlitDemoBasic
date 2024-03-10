@@ -10,7 +10,34 @@ from langchain.schema.output_parser import StrOutputParser
 from operator import itemgetter
 from langchain.schema.messages import HumanMessage, SystemMessage, AIMessage
 from langchain.callbacks.streamlit.streamlit_callback_handler import StreamlitCallbackHandler
+from pymongo import MongoClient
+from bson.binary import Binary
+import pickle
+import os
 
+def save_embeddings_to_mongodb(embeddings):
+    client = MongoClient()
+    db = client[os.getenv('DB_NAME')]
+    collection = db[os.getenv('COLLECTION_NAME')]
+
+    # Convert embeddings to binary
+    binary_embeddings = Binary(pickle.dumps(embeddings, protocol=2))  # protocol 2 for compatibility with python 2
+
+    # Save embeddings to MongoDB
+    collection.insert_one({"embeddings": binary_embeddings})
+
+def load_embeddings_from_mongodb():
+    client = MongoClient()
+    db = client[os.getenv('DB_NAME')]
+    collection = db[os.getenv('COLLECTION_NAME')]
+
+    # Load embeddings from MongoDB
+    data = collection.find_one()
+
+    # Convert embeddings from binary
+    embeddings = pickle.loads(data["embeddings"])
+
+    return embeddings
 
 def format_docs(docs):
     res = ""
@@ -25,15 +52,15 @@ def format_docs(docs):
     return res
 
 
-def get_search_index(file_name="Mahmoudi_Nima_202202_PhD.pdf", index_folder="index"):
+def get_search_index():
     # load embeddings
     from langchain.vectorstores import FAISS
     from langchain.embeddings.openai import OpenAIEmbeddings
 
+    embeddings = load_embeddings_from_mongodb(os.getenv('DB_NAME'), os.getenv('COLLECTION_NAME'))
+
     search_index = FAISS.load_local(
-        folder_path=index_folder,
-        index_name=file_name + ".index",
-        embeddings=OpenAIEmbeddings(),
+        embeddings=embeddings,
     )
     return search_index
 
@@ -89,8 +116,8 @@ def get_standalone_question_from_chat_history_chain():
     )
     return _inputs
 
-def get_rag_chain(file_name="Mahmoudi_Nima_202202_PhD.pdf", index_folder="index", retrieval_cb=None):
-    vectorstore = get_search_index(file_name, index_folder)
+def get_rag_chain(retrieval_cb=None):
+    vectorstore = get_search_index()
     retriever = vectorstore.as_retriever()
 
     if retrieval_cb is None:
@@ -166,8 +193,8 @@ def get_search_query_generation_chain():
 
     return generate_queries
 
-def get_rag_fusion_chain(file_name="Mahmoudi_Nima_202202_PhD.pdf", index_folder="index", retrieval_cb=None):
-    vectorstore = get_search_index(file_name, index_folder)
+def get_rag_fusion_chain(retrieval_cb=None):
+    vectorstore = get_search_index()
     retriever = vectorstore.as_retriever()
     query_generation_chain = get_search_query_generation_chain()
     _inputs = RunnableMap(
@@ -216,9 +243,9 @@ def get_search_tool_from_index(search_index, st_cb: Optional[StreamlitCallbackHa
     
     return search
 
-def get_lc_oai_tools(file_name:str = "Mahmoudi_Nima_202202_PhD.pdf", index_folder: str = "index", st_cb: Optional[StreamlitCallbackHandler] = None, ):
+def get_lc_oai_tools(st_cb: Optional[StreamlitCallbackHandler] = None, ):
     from langchain.tools.render import format_tool_to_openai_tool
-    search_index = get_search_index(file_name, index_folder)
+    search_index = get_search_index()
     lc_tools = [get_search_tool_from_index(search_index=search_index, st_cb=st_cb)]
     oai_tools = [format_tool_to_openai_tool(t) for t in lc_tools]
     return lc_tools, oai_tools
