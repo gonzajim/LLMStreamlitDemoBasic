@@ -37,7 +37,9 @@ def embed_document(file_id, drive):
     collection.insert_one({'file_name': file['title'], 'index': Binary(index_bytes)})
 
 def embed_all_pdf_docs():
-    client_secrets = json.loads(os.getenv('CLIENT_SECRETS'))
+    # Cargar client_secrets del archivo JSON
+    with open('client_secret_drive.json', 'r') as f:
+        client_secrets = json.load(f)
     gauth = GoogleAuth(settings={'client_config': client_secrets})
     drive = GoogleDrive(gauth)
 
@@ -63,8 +65,9 @@ from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 
 def get_all_index_files():
-    # Cargar client_secrets de las secrets
-    client_secrets = json.loads(os.getenv('CLIENT_SECRETS'))
+    # Cargar client_secrets del archivo JSON
+    with open('client_secret_drive.json', 'r') as f:
+        client_secrets = json.load(f)
 
     # Autenticación con Google Drive
     gauth = GoogleAuth(settings={'client_config': client_secrets})
