@@ -14,7 +14,7 @@ def authenticate_with_drive():
     # Autenticación con Google Drive
     gauth = GoogleAuth()
     gauth.client_config = client_secrets['web']  # Establecer la configuración del cliente
-    gauth.LocalWebserverAuth()  # Creates local webserver and auto handles authentication
+    gauth.CommandLineAuth()  # Genera URL para autenticación manual
     drive = GoogleDrive(gauth)
 
     return drive
