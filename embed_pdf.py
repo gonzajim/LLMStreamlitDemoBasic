@@ -5,6 +5,8 @@ from bson.binary import Binary
 import pickle
 import os
 import json
+import boto3
+from botocore.exceptions import NoCredentialsError
 
 def authenticate_with_drive():
     # Cargar client_secrets del archivo JSON
@@ -19,10 +21,20 @@ def authenticate_with_drive():
 
     return drive
 
+
 def embed_document(file_id, drive):
-    file = drive.CreateFile({'id': file_id})
-    file.GetContentFile('temp.pdf')  # download file as 'temp.pdf'
-    
+    # Create a session using your AWS credentials
+    s3 = boto3.client('s3')
+
+    # The name of the bucket
+    bucket_name = os.getenv('S3_BUCKET_NAME')
+
+    try:
+        s3.download_file(bucket_name, file_id, 'temp.pdf')
+    except NoCredentialsError:
+        print("No AWS credentials were found.")
+        return
+
     loader = PagedPDFSplitter('temp.pdf')
     source_pages = loader.load_and_split()
 
@@ -47,42 +59,47 @@ def embed_document(file_id, drive):
 
     # Convert the search index to bytes and store it in MongoDB
     index_bytes = pickle.dumps(search_index)
-    collection.insert_one({'file_name': file['title'], 'index': Binary(index_bytes)})
+    collection.insert_one({'file_name': file_id, 'index': Binary(index_bytes)})
+
 
 def embed_all_pdf_docs():
-    drive = authenticate_with_drive()
+    # Create a session using your AWS credentials
+    s3 = boto3.client('s3')
 
-    # Get the directory ID from the environment variable
-    directory_id = os.getenv('DIRECTORY_ID')
+    # The name of the bucket
+    bucket_name = os.getenv('S3_BUCKET_NAME')
 
-    # Get the list of all files in the specified directory of Google Drive
-    file_list = drive.ListFile({'q': f"'{directory_id}' in parents"}).GetList()
+    try:
+        # List all the objects in the bucket
+        objects = s3.list_objects(Bucket=bucket_name)['Contents']
 
-    # Filter the list to only include PDF files
-    pdf_files = [file for file in file_list if file['title'].endswith('.pdf')]
+        # Filter the list to only include PDF files
+        pdf_files = [obj for obj in objects if obj['Key'].endswith('.pdf')]
 
-    if pdf_files:
-        for pdf_file in pdf_files:
-            print(f"Embedding {pdf_file['title']}...")
-            embed_document(file_id=pdf_file['id'], drive=drive)
-            print("Done!")
-    else:
-        raise Exception("No PDF files found in the directory.")
-    
-import json
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
+        if pdf_files:
+            for pdf_file in pdf_files:
+                print(f"Embedding {pdf_file['Key']}...")
+                embed_document(file_id=pdf_file['Key'], drive=s3)
+                print("Done!")
+        else:
+            raise Exception("No PDF files found in the directory.")
+    except NoCredentialsError:
+        print("No AWS credentials were found.")
 
 def get_all_index_files():
-    drive = authenticate_with_drive()
+    # Create a session using your AWS credentials
+    s3 = boto3.client('s3')
 
-    # Obtener el ID del directorio de las variables de entorno
-    directory_id = os.getenv('DIRECTORY_ID')
+    # The name of the bucket
+    bucket_name = os.getenv('S3_BUCKET_NAME')
 
-    # Listar todos los archivos en el directorio
-    file_list = drive.ListFile({'q': f"'{directory_id}' in parents and trashed=false"}).GetList()
+    try:
+        # List all the objects in the bucket
+        objects = s3.list_objects(Bucket=bucket_name)['Contents']
 
-    # Obtener los nombres de los archivos
-    file_names = [file['title'] for file in file_list]
+        # Get the names of the files
+        file_names = [obj['Key'] for obj in objects]
 
-    return file_names
+        return file_names
+    except NoCredentialsError:
+        print("No AWS credentials were found.")
