@@ -8,19 +8,6 @@ import json
 import boto3
 from botocore.exceptions import NoCredentialsError
 
-def authenticate_with_drive():
-    # Cargar client_secrets del archivo JSON
-    with open('./client_secrets.json', 'r') as f:
-        client_secrets = json.load(f)
-
-    # Autenticación con Google Drive
-    gauth = GoogleAuth()
-    gauth.client_config = client_secrets['web']  # Establecer la configuración del cliente
-    gauth.CommandLineAuth()  # Genera URL para autenticación manual
-    drive = GoogleDrive(gauth)
-
-    return drive
-
 
 def embed_document(file_id, drive):
     # Create a session using your AWS credentials
