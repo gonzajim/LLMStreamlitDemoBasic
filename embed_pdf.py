@@ -90,3 +90,7 @@ def get_all_index_files():
         return file_names
     except NoCredentialsError:
         print("No AWS credentials were found.")
+        return []  # Return an empty list if no credentials are found
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return []  # Return an empty list if an error occurs
