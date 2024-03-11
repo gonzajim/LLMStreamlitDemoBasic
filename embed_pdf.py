@@ -8,7 +8,7 @@ import json
 
 def authenticate_with_drive():
     # Cargar client_secrets del archivo JSON
-    with open('client_secret_drive.json', 'r') as f:
+    with open('./client_secrets.json', 'r') as f:
         client_secrets = json.load(f)
 
     # Autenticación con Google Drive
