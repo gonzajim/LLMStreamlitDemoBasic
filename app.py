@@ -9,7 +9,7 @@ if st.sidebar.button("Embed Documents"):
     st.sidebar.info("Embedding documents...")
     try:
         embed_doc.embed_all_docs()
-        st.sidebar.info("Done!")
+        st.sidebar.info("Ación realizada!")
     except Exception as e:
         st.sidebar.error(e)
         st.sidebar.error("Failed to embed documents.")
