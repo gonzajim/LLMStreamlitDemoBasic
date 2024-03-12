@@ -7,17 +7,30 @@ import os
 import json
 import boto3
 from botocore.exceptions import NoCredentialsError
-
+from docx import Document
 
 def embed_document(file_id, drive, s3, bucket_name, collection):
     try:
-        s3.download_file(bucket_name, file_id, 'temp.pdf')
+        s3.download_file(bucket_name, file_id, 'tempfile')
     except NoCredentialsError:
         print("No AWS credentials were found.")
         return
 
-    loader = PagedPDFSplitter('temp.pdf')
-    source_pages = loader.load_and_split()
+    # Determine the file type
+    file_type = file_id.split('.')[-1]
+
+    if file_type == 'pdf':
+        loader = PagedPDFSplitter('tempfile')
+        source_pages = loader.load_and_split()
+    elif file_type == 'txt':
+        with open('tempfile', 'r') as f:
+            source_pages = [f.read()]
+    elif file_type in ['doc', 'docx']:
+        doc = Document('tempfile')
+        source_pages = [p.text for p in doc.paragraphs]
+    else:
+        print(f"Unsupported file type: {file_type}")
+        return
 
     embedding_func = OpenAIEmbeddings()
     text_splitter = RecursiveCharacterTextSplitter(

@@ -8,7 +8,7 @@ openapi_key = os.getenv("OPENAPI_KEY")
 if st.sidebar.button("Embed Documents"):
     st.sidebar.info("Embedding documents...")
     try:
-        embed_pdf.embed_all_pdf_docs()
+        embed_pdf.embed_all_docs()
         st.sidebar.info("Done!")
     except Exception as e:
         st.sidebar.error(e)
