@@ -17,9 +17,11 @@ if st.sidebar.button("Embed Documents"):
 # create the app
 st.title("Welcome to NimaGPT")
 
-chosen_file = st.radio(
-    "Choose a file to search", embed_pdf.get_all_index_files(), index=0
-)
+# Get all files and pass them to RAG
+all_files = embed_pdf.get_all_index_files()
+st.write("Using the following files:")
+for file in all_files:
+    st.write(file)
 
 # load the agent
 from llm_helper import convert_message, get_rag_chain, get_rag_fusion_chain
@@ -72,27 +74,28 @@ if prompt:
             return qs
         
         # get the chain with the retrieval callback
-        custom_chain = get_rag_chain_func(chosen_file, retrieval_cb=retrieval_cb)
+        for file in all_files:
+            custom_chain = get_rag_chain_func(file, retrieval_cb=retrieval_cb)
         
-        if "messages" in st.session_state:
-            chat_history = [convert_message(m) for m in st.session_state.messages[:-1]]
-        else:
-            chat_history = []
-
-        full_response = ""
-        for response in custom_chain.stream(
-            {"input": prompt, "chat_history": chat_history}
-        ):
-            if "output" in response:
-                full_response += response["output"]
+            if "messages" in st.session_state:
+                chat_history = [convert_message(m) for m in st.session_state.messages[:-1]]
             else:
-                full_response += response.content
+                chat_history = []
 
-            message_placeholder.markdown(full_response + "▌")
-            update_retrieval_status()
+            full_response = ""
+            for response in custom_chain.stream(
+                {"input": prompt, "chat_history": chat_history}
+            ):
+                if "output" in response:
+                    full_response += response["output"]
+                else:
+                    full_response += response.content
 
-        retrieval_status.update(state="complete")
-        message_placeholder.markdown(full_response)
+                message_placeholder.markdown(full_response + "▌")
+                update_retrieval_status()
 
-    # add the full response to the message history
-    st.session_state.messages.append({"role": "assistant", "content": full_response})
+            retrieval_status.update(state="complete")
+            message_placeholder.markdown(full_response)
+
+        # add the full response to the message history
+        st.session_state.messages.append({"role": "assistant", "content": full_response})
