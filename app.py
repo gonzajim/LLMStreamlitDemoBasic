@@ -2,32 +2,17 @@ import streamlit as st
 import os
 import embed_pdf
 
-# create sidebar and ask for openai api key if not set in secrets
-secrets_file_path = os.path.join(".streamlit", "secrets.toml")
-if os.path.exists(secrets_file_path):
-    try:
-        if "OPENAI_API_KEY" in st.secrets:
-            os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
-        else:
-            print("OpenAI API Key not found in environment variables")
-    except FileNotFoundError:
-        print('Secrets file not found')
-else:
-    print('Secrets file not found')
+# get openai api key from environment variable
+os.environ["OPENAI_API_KEY"] = os.getenv("OPENAPI_KEY")
 
-if not os.getenv('OPENAI_API_KEY', '').startswith("sk-"):
-    os.environ["OPENAI_API_KEY"] = st.sidebar.text_input(
-        "OpenAI API Key", type="password"
-    )
-else:
-    if st.sidebar.button("Embed Documents"):
-        st.sidebar.info("Embedding documents...")
-        try:
-            embed_pdf.embed_all_pdf_docs()
-            st.sidebar.info("Done!")
-        except Exception as e:
-            st.sidebar.error(e)
-            st.sidebar.error("Failed to embed documents.")
+if st.sidebar.button("Embed Documents"):
+    st.sidebar.info("Embedding documents...")
+    try:
+        embed_pdf.embed_all_pdf_docs()
+        st.sidebar.info("Done!")
+    except Exception as e:
+        st.sidebar.error(e)
+        st.sidebar.error("Failed to embed documents.")
 
 # create the app
 st.title("Welcome to NimaGPT")
@@ -48,12 +33,10 @@ rag_method_map = {
     'Basic RAG': get_rag_chain,
     'RAG Fusion': get_rag_fusion_chain
 }
-chosen_rag_method = st.radio(
+chosen_rag_method = st.sidebar.radio(
     "Choose a RAG method", rag_method_map.keys(), index=0
 )
 get_rag_chain_func = rag_method_map[chosen_rag_method]
-## get the chain WITHOUT the retrieval callback (not used)
-# custom_chain = get_rag_chain_func(chosen_file)
 
 # create the message history state
 if "messages" not in st.session_state:
