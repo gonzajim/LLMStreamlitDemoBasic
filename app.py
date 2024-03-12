@@ -1,6 +1,6 @@
 import streamlit as st
 import os
-import embed_pdf
+import embed_doc
 
 # get openai api key from environment variable
 openapi_key = os.getenv("OPENAPI_KEY")
@@ -8,7 +8,7 @@ openapi_key = os.getenv("OPENAPI_KEY")
 if st.sidebar.button("Embed Documents"):
     st.sidebar.info("Embedding documents...")
     try:
-        embed_pdf.embed_all_docs()
+        embed_doc.embed_all_docs()
         st.sidebar.info("Done!")
     except Exception as e:
         st.sidebar.error(e)
@@ -18,7 +18,7 @@ if st.sidebar.button("Embed Documents"):
 st.title("Welcome to NimaGPT")
 
 # Get all files and pass them to RAG
-all_files = embed_pdf.get_all_index_files()
+all_files = embed_doc.get_all_index_files()
 st.write("Using the following files:")
 for file in all_files:
     st.write(file)
