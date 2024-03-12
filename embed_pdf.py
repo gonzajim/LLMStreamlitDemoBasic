@@ -1,5 +1,3 @@
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
 from pymongo import MongoClient
 from bson.binary import Binary
 import pickle
