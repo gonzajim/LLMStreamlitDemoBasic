@@ -3,7 +3,7 @@ import os
 import embed_pdf
 
 # get openai api key from environment variable
-os.environ["OPENAI_API_KEY"] = os.getenv("OPENAPI_KEY")
+openapi_key = os.getenv("OPENAPI_KEY")
 
 if st.sidebar.button("Embed Documents"):
     st.sidebar.info("Embedding documents...")
@@ -20,11 +20,6 @@ st.title("Welcome to NimaGPT")
 chosen_file = st.radio(
     "Choose a file to search", embed_pdf.get_all_index_files(), index=0
 )
-
-# check if openai api key is set
-if not os.getenv('OPENAI_API_KEY', '').startswith("sk-"):
-    st.warning("Please enter your OpenAI API key!", icon="⚠")
-    st.stop()
 
 # load the agent
 from llm_helper import convert_message, get_rag_chain, get_rag_fusion_chain
