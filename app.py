@@ -5,23 +5,37 @@ import embed_pdf
 # get openai api key from environment variable
 openapi_key = os.getenv("OPENAPI_KEY")
 
-if st.sidebar.button("Embed Documents"):
-    st.sidebar.info("Embedding documents...")
-    try:
-        embed_pdf.embed_all_docs()
-        st.sidebar.info("Ación realizada!")
-    except Exception as e:
-        st.sidebar.error(e)
-        st.sidebar.error("Failed to embed documents.")
+# Variable global para almacenar el tamaño de los chunks
+chunk_size = st.sidebar.text_input("Chunks:", value="500")
+
+# Convertir el tamaño de los chunks a un entero
+try:
+    chunk_size = int(chunk_size)
+except ValueError:
+    st.sidebar.error("El tamaño de los chunks debe ser un número entero.")
+    chunk_size = 500  # Valor por defecto
+
+# Obtener la lista de ficheros de S3
+try:
+    s3_files = embed_pdf.get_all_index_files()
+    s3_files_str = "\n".join(s3_files)
+except Exception as e:
+    st.sidebar.error("Error al obtener los ficheros de S3.")
+    s3_files_str = str(e)
+
+# Mostrar la lista de ficheros de S3
+st.sidebar.text_area("Ficheros de S3:", value=s3_files_str, height=100)
+
+try:
+    embed_pdf.embed_all_docs()
+    st.sidebar.info("Ación realizada!")
+except Exception as e:
+    st.sidebar.error(e)
+    st.sidebar.error("Failed to embed documents.")
+
 
 # create the app
-st.title("Welcome to NimaGPT")
-
-# Get all files and pass them to RAG
-all_files = embed_pdf.get_all_index_files()
-st.write("Using the following files:")
-for file in all_files:
-    st.write(file)
+st.title("Bienvenidos al asistente del observatorio Recava de la UCLM")
 
 # load the agent
 from llm_helper import convert_message, get_rag_chain, get_rag_fusion_chain
@@ -45,7 +59,7 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # render the chat input
-prompt = st.chat_input("Enter your message...")
+prompt = st.chat_input("Introduzca su pregunta...")
 if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
 
@@ -74,7 +88,7 @@ if prompt:
             return qs
         
         # get the chain with the retrieval callback
-        for file in all_files:
+        for file in s3_files:
             custom_chain = get_rag_chain_func(file, retrieval_cb=retrieval_cb)
         
             if "messages" in st.session_state:
