@@ -5,7 +5,6 @@ import os
 import json
 import boto3
 from botocore.exceptions import NoCredentialsError
-from docx import Document
 
 def embed_document(file_id, drive, s3, bucket_name, collection):
     try:
@@ -23,9 +22,6 @@ def embed_document(file_id, drive, s3, bucket_name, collection):
     elif file_type == 'txt':
         with open('tempfile', 'r') as f:
             source_pages = [f.read()]
-    elif file_type in ['doc', 'docx']:
-        doc = Document('tempfile')
-        source_pages = [p.text for p in doc.paragraphs]
     else:
         print(f"Unsupported file type: {file_type}")
         return

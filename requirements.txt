@@ -9,4 +9,3 @@ pymongo
 pickle-mixin
 python-dotenv
 boto3
-python-docx
