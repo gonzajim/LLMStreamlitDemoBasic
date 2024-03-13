@@ -34,9 +34,9 @@ try:
     # Intenta obtener el archivo
     try:
         s3.head_object(Bucket=bucket_name, Key=file_name)
-        print("File exists and you have permission to access.")
+        st.sidebar.error("File exists and you have permission to access.")
     except Exception as e:
-        print(e)
+        st.sidebar.error(e)
 except Exception as e:
     st.sidebar.error("Error al obtener los ficheros de S3.")
     s3_files_str = str(e)
