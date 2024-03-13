@@ -69,7 +69,6 @@ def embed_all_docs():
 
 def get_all_index_files():
     # Create a session using your AWS credentials
-    # Create a session using your AWS credentials
     aws_access_key_id = os.getenv('AWS_ACCESS_KEY_ID')
     aws_secret_access_key = os.getenv('AWS_SECRET_ACCESS_KEY')
 
@@ -89,8 +88,6 @@ def get_all_index_files():
 
         # Get the names of the files
         file_names = [obj['Key'] for obj in objects]
-        print("hola")
-
         return file_names
     except NoCredentialsError:
         print("No AWS credentials were found.")
