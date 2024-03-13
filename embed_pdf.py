@@ -85,7 +85,7 @@ def get_all_index_files():
     try:
         # List all the objects in the bucket
         objects = s3.list_objects(Bucket=bucket_name)['Contents']
-
+        print(objects.keys())
         # Get the names of the files
         file_names = [obj['Key'] for obj in objects]
         return file_names
