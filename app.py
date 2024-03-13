@@ -19,7 +19,7 @@ except ValueError:
 try:
     s3_files = embed_pdf.get_all_index_files()
     s3_files_str = "\n".join(str(file) for file in s3_files)
-    st.sidebar.error(s3_files_str)
+    st.sidebar.error(s3_files)
 except Exception as e:
     st.sidebar.error("Error al obtener los ficheros de S3.")
     s3_files_str = str(e)
