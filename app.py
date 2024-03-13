@@ -20,6 +20,23 @@ try:
     s3_files = embed_pdf.get_all_index_files()
     s3_files_str = "\n".join(str(file) for file in s3_files)
     st.sidebar.error(os.getenv('S3_BUCKET_NAME'))
+    import boto3
+
+    # Crea un cliente de S3
+    s3 = boto3.client('s3')
+
+    # Nombre del bucket
+    bucket_name = os.getenv('S3_BUCKET_NAME')
+
+    # Nombre del archivo
+    file_name = 'GRI 1_ Fundamentos 2021 - Spanish.pdf'
+
+    # Intenta obtener el archivo
+    try:
+        s3.head_object(Bucket=bucket_name, Key=file_name)
+        print("File exists and you have permission to access.")
+    except Exception as e:
+        print(e)
 except Exception as e:
     st.sidebar.error("Error al obtener los ficheros de S3.")
     s3_files_str = str(e)
