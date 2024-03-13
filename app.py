@@ -10,6 +10,7 @@ uploaded_file = st.file_uploader("Sube un archivo PDF para retrieval", type="pdf
 
 # create the app
 st.title("Bienvenidos al asistente del observatorio Recava de la UCLM")
+st.markdown(os.getenv('DB_NAME'))
 
 # If a file has been uploaded
 if uploaded_file is not None:
