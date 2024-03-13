@@ -69,7 +69,16 @@ def embed_all_docs():
 
 def get_all_index_files():
     # Create a session using your AWS credentials
-    s3 = boto3.client('s3')
+    # Create a session using your AWS credentials
+    aws_access_key_id = os.getenv('AWS_ACCESS_KEY_ID')
+    aws_secret_access_key = os.getenv('AWS_SECRET_ACCESS_KEY')
+
+    session = boto3.Session(
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key
+    )
+
+    s3 = session.client('s3')
 
     # The name of the bucket
     bucket_name = os.getenv('S3_BUCKET_NAME')
