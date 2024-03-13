@@ -27,8 +27,6 @@ def save_embeddings_to_mongodb(embeddings):
     collection.insert_one({"embeddings": binary_embeddings})
 
 def load_embeddings_from_mongodb():
-    print(os.getenv('DB_NAME'))
-    print(os.getenv('COLLECTION_NAME'))
     client = MongoClient()
     db = client[os.getenv('DB_NAME')]
     collection = db[os.getenv('COLLECTION_NAME')]
@@ -59,7 +57,7 @@ def get_search_index():
     from langchain.vectorstores import FAISS
     from langchain.embeddings.openai import OpenAIEmbeddings
 
-    embeddings = load_embeddings_from_mongodb(os.getenv('DB_NAME'), os.getenv('COLLECTION_NAME'))
+    embeddings = load_embeddings_from_mongodb()
 
     search_index = FAISS.load_local(
         embeddings=embeddings,
