@@ -80,7 +80,7 @@ def get_all_index_files():
 
         # Get the names of the files
         file_names = [obj['Key'] for obj in objects]
-        print(file_names)
+        print("hola")
 
         return file_names
     except NoCredentialsError:
