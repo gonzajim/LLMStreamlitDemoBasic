@@ -16,7 +16,7 @@ import pickle
 import os
 
 def save_embeddings_to_mongodb(embeddings):
-    client = MongoClient()
+    client = MongoClient(os.getenv('MONGODB_URI'))
     db = client[os.getenv('DB_NAME')]
     collection = db[os.getenv('COLLECTION_NAME')]
 
@@ -27,7 +27,7 @@ def save_embeddings_to_mongodb(embeddings):
     collection.insert_one({"embeddings": binary_embeddings})
 
 def load_embeddings_from_mongodb():
-    client = MongoClient()
+    client = MongoClient(os.getenv('MONGODB_URI'))
     db = client[os.getenv('DB_NAME')]
     collection = db[os.getenv('COLLECTION_NAME')]
 
