@@ -18,7 +18,7 @@ except ValueError:
 # Obtener la lista de ficheros de S3
 try:
     s3_files = embed_pdf.get_all_index_files()
-    print("se han obtenido los nombres de los ficheros  de S3")
+    st.sidebar.error("se han obtenido los nombres de los ficheros  de S3")
     s3_files_str = "\n".join(str(file) for file in s3_files)
 except Exception as e:
     st.sidebar.error("Error al obtener los ficheros de S3.")
