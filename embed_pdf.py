@@ -5,6 +5,14 @@ import os
 import json
 import boto3
 from botocore.exceptions import NoCredentialsError
+import gridfs
+
+def save_file_to_mongodb(file, filename):
+    client = MongoClient(os.getenv('MONGODB_URI'))
+    db = client[os.getenv('DB_NAME')]
+    fs = gridfs.GridFS(db)
+
+    fs.put(file, filename=filename)
 
 def embed_document(file_id, drive, s3, bucket_name, collection):
     try:
