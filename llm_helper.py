@@ -27,6 +27,8 @@ def save_embeddings_to_mongodb(embeddings):
     collection.insert_one({"embeddings": binary_embeddings})
 
 def load_embeddings_from_mongodb():
+    print(os.getenv('DB_NAME'))
+    print(os.getenv('COLLECTION_NAME'))
     client = MongoClient()
     db = client[os.getenv('DB_NAME')]
     collection = db[os.getenv('COLLECTION_NAME')]
