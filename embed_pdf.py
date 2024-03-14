@@ -8,7 +8,6 @@ from langchain_community.document_loaders.pdf import PagedPDFSplitter
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import TextLoader
 from langchain_community.vectorstores import FAISS
-import faiss
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import CharacterTextSplitter
 import tempfile
@@ -56,11 +55,8 @@ def embed_document(file, filename):
     source_chunks = text_splitter.split_documents(source_pages)
     search_index = FAISS.from_documents(source_chunks, embeddings)
 
-    # Serialize the FAISS index to bytes
-    index_bytes = faiss.serialize_index(search_index)
-
     try:
         # Store it in MongoDB
-        collection.insert_one({'faiss_index': index_bytes})
+        collection.insert_one({'faiss_index': search_index.serialize_to_bytes()})
     except PyMongoError as e:
         print(f"Error inserting into MongoDB: {e}")
