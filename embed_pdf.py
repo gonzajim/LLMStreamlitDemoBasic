@@ -43,7 +43,8 @@ def embed_document(file, filename):
         print(f"Unsupported file type: {file_type}")
         return
 
-    embedding_func = OpenAIEmbeddings(openai_api_key=os.getenv('OPENAI_API_KEY'), model="text-embedding-3-small")
+    OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+    embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY, model="text-embedding-3-small")
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
         chunk_overlap=100,
@@ -52,7 +53,7 @@ def embed_document(file, filename):
         separators=["\n\n", "\n", " ", ""],
     )
     source_chunks = text_splitter.split_documents(source_pages)
-    search_index = FAISS.from_documents(source_chunks, embedding_func)
+    search_index = FAISS.from_documents(source_chunks, embeddings)
 
     try:
         # Convert the search index to bytes
