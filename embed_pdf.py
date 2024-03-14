@@ -55,22 +55,11 @@ def embed_document(file, filename):
     source_chunks = text_splitter.split_documents(source_pages)
     search_index = FAISS.from_documents(source_chunks, embeddings)
 
-    # Extract data from the search_index object
-    index_data = {
-        'dimension': search_index.dimension,
-        'nlist': search_index.nlist,
-        'quantizer': search_index.quantizer,
-        'metric_type': search_index.metric_type,
-        'metric_arg': search_index.metric_arg,
-        'd': search_index.d,
-        'ntotal': search_index.ntotal,
-        'direct_map_type': search_index.direct_map_type,
-        'is_trained': search_index.is_trained,
-        'verbose': search_index.verbose,
-    }
+    # Serialize the FAISS index to bytes
+    index_bytes = FAISS.serialize_index(search_index)
 
     try:
         # Store it in MongoDB
-        collection.insert_one({'file_name': filename, 'index': index_data})
+        collection.insert_one({'faiss_index': index_bytes})
     except PyMongoError as e:
         print(f"Error inserting into MongoDB: {e}")
