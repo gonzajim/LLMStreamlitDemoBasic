@@ -3,9 +3,8 @@ streamlit
 faiss-cpu
 tiktoken
 langchainhub
-pypdf
+PyPDF2  # or PyPDF4
 pymongo
-pickle-mixin
 python-dotenv
 langchain-community
 langchain-openai
