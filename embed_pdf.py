@@ -44,7 +44,7 @@ def embed_document(file, filename):
         return
 
     OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-    embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
+    embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
         chunk_overlap=100,
