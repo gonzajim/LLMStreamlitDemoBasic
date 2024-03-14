@@ -5,9 +5,9 @@ from pymongo import MongoClient
 from pymongo.errors import PyMongoError
 import gridfs
 from langchain_community.document_loaders.pdf import PagedPDFSplitter
-from langchain_openai import OpenAIEmbeddings
+from openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_faiss import FAISS  # Assuming FAISS is in this module
+import faiss  
 
 def embed_document(file, filename):
     try:
@@ -44,7 +44,7 @@ def embed_document(file, filename):
         separators=["\n\n", "\n", " ", ""],
     )
     source_chunks = text_splitter.split_documents(source_pages)
-    search_index = FAISS.from_documents(source_chunks, embedding_func)
+    search_index = faiss.from_documents(source_chunks, embedding_func)
 
     try:
         # Convert the search index to bytes
