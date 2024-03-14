@@ -1,9 +1,13 @@
 import streamlit as st
 import os
 import embed_pdf
+from llm_helper import convert_message, get_rag_chain
 
 # get openai api key from environment variable
 openapi_key = os.getenv("OPENAPI_KEY")
+
+# create the app
+st.title("Bienvenidos al asistente del observatorio Recava de la UCLM")
 
 # Ask the user to upload a PDF file
 uploaded_file = st.file_uploader("Sube un archivo PDF para retrieval", type="pdf")
@@ -20,14 +24,6 @@ if uploaded_file is not None:
     st.session_state['pdf_file'] = file_bytes
 
     st.success("Archivo PDF subido y almacenado para su uso posterior.")
-
-# create the app
-st.title("Bienvenidos al asistente del observatorio Recava de la UCLM")
-st.markdown(os.getenv('DB_NAME'))
-
-
-# load the agent
-from llm_helper import convert_message, get_rag_chain
 
 # create the message history state
 if "messages" not in st.session_state:
