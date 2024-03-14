@@ -7,7 +7,10 @@ import gridfs
 from langchain_community.document_loaders.pdf import PagedPDFSplitter
 from openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-import faiss  
+from langchain_community.document_loaders import TextLoader
+from langchain_community.vectorstores import FAISS
+from langchain_openai import OpenAIEmbeddings
+from langchain_text_splitters import CharacterTextSplitter
 
 def embed_document(file, filename):
     try:
@@ -44,7 +47,7 @@ def embed_document(file, filename):
         separators=["\n\n", "\n", " ", ""],
     )
     source_chunks = text_splitter.split_documents(source_pages)
-    search_index = faiss.from_documents(source_chunks, embedding_func)
+    search_index = FAISS.from_documents(source_chunks, embedding_func)
 
     try:
         # Convert the search index to bytes
