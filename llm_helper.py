@@ -1,19 +1,46 @@
-from typing import Optional
-
-# langchain imports
-from langchain.chat_models import ChatOpenAI
-from langchain.schema.runnable import RunnableMap
-from langchain.prompts.prompt import PromptTemplate
-from langchain.prompts import ChatPromptTemplate
-from langchain.schema.runnable import RunnablePassthrough
-from langchain.schema.output_parser import StrOutputParser
-from operator import itemgetter
-from langchain.schema.messages import HumanMessage, SystemMessage, AIMessage
-from langchain.callbacks.streamlit.streamlit_callback_handler import StreamlitCallbackHandler
-from pymongo import MongoClient
 from bson.binary import Binary
-import pickle
+from langchain.callbacks.streamlit.streamlit_callback_handler import StreamlitCallbackHandler
+from langchain.chat_models import ChatOpenAI
+from langchain_community.vectorstores import FAISS
+from langchain_openai import OpenAIEmbeddings
+from langchain.prompts import ChatPromptTemplate
+from langchain.prompts.prompt import PromptTemplate
+from langchain.schema.messages import AIMessage, HumanMessage, SystemMessage
+from langchain.schema.output_parser import StrOutputParser
+from langchain.schema.runnable import RunnableMap, RunnablePassthrough
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from operator import itemgetter
+from pymongo import MongoClient
+from pymongo.errors import PyMongoError
+from typing import Optional
 import os
+import pickle
+
+def embed_and_store_document(source_pages, filename, collection):
+    OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+    embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=500,
+        chunk_overlap=100,
+        length_function=len,
+        is_separator_regex=False,
+        separators=["\n\n", "\n", " ", ""],
+    )
+    source_chunks = text_splitter.split_documents(source_pages)
+    search_index = FAISS.from_documents(source_chunks, embeddings)
+
+    try:
+        # Convert the search index to bytes
+        index_bytes = pickle.dumps(search_index)
+    except (pickle.PicklingError, AttributeError) as e:
+        print(f"Error serializing search index: {e}")
+        return
+
+    try:
+        # Store it in MongoDB
+        collection.insert_one({'file_name': filename, 'index': Binary(index_bytes)})
+    except PyMongoError as e:
+        print(f"Error inserting into MongoDB: {e}")
 
 def save_embeddings_to_mongodb(embeddings):
     client = MongoClient(os.getenv('MONGODB_URI'))
