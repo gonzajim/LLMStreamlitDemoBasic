@@ -10,6 +10,7 @@ from langchain_community.document_loaders import TextLoader
 from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import CharacterTextSplitter
+import tempfile
 
 def embed_document(file, filename):
     try:
@@ -28,7 +29,12 @@ def embed_document(file, filename):
     file_type = filename.split('.')[-1]
 
     if file_type == 'pdf':
-        loader = PagedPDFSplitter(file)
+        # Save the file to a temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp:
+            temp.write(file)
+            temp_file_path = temp.name
+        # Pass the path of the temporary file to PagedPDFSplitter
+        loader = PagedPDFSplitter(temp_file_path)
         source_pages = loader.load_and_split()
     elif file_type == 'txt':
         with open(filename, 'r') as f:  # Changed 'tempfile' to filename
