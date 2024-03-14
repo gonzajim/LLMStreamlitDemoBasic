@@ -13,9 +13,9 @@ if uploaded_file is not None:
     # Read the file
     file_bytes = uploaded_file.read()
 
-    # Call the method to save the file to MongoDB
-    save_file_to_mongodb(file_bytes, uploaded_file.name)
-    
+    # Call the method to save the file to MongoDB and generate index
+    embed_pdf.embed_document(file_bytes, uploaded_file.name)
+
     # Store the file in session state for later use
     st.session_state['pdf_file'] = file_bytes
 

@@ -1,34 +1,35 @@
-from pymongo import MongoClient
-from bson.binary import Binary
-import pickle
 import os
-import json
-import boto3
-from botocore.exceptions import NoCredentialsError
+import pickle
+from bson.binary import Binary
+from pymongo import MongoClient
+from pymongo.errors import PyMongoError
 import gridfs
+from langchain_community.document_loaders.pdf import PagedPDFSplitter
+from langchain_openai import OpenAIEmbeddings
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_faiss import FAISS  # Assuming FAISS is in this module
 
-def save_file_to_mongodb(file, filename):
-    client = MongoClient(os.getenv('MONGODB_URI'))
-    db = client[os.getenv('DB_NAME')]
-    fs = gridfs.GridFS(db)
-
-    fs.put(file, filename=filename)
-
-def embed_document(file_id, drive, s3, bucket_name, collection):
+def embed_document(file, filename):
     try:
-        s3.download_file(bucket_name, file_id, 'tempfile')
-    except NoCredentialsError:
-        print("No AWS credentials were found.")
+        # Save file in MongoDB
+        client = MongoClient(os.getenv('MONGODB_URI'))
+        db = client[os.getenv('DB_NAME')]
+        collection = db[os.getenv('MONGODB_COLLECTION_NAME')]
+        fs = gridfs.GridFS(db)
+
+        fs.put(file, filename=filename)
+    except PyMongoError as e:
+        print(f"Error while saving file to MongoDB: {e}")
         return
 
     # Determine the file type
-    file_type = file_id.split('.')[-1]
+    file_type = filename.split('.')[-1]
 
     if file_type == 'pdf':
-        loader = PagedPDFSplitter('tempfile')
+        loader = PagedPDFSplitter(file)
         source_pages = loader.load_and_split()
     elif file_type == 'txt':
-        with open('tempfile', 'r') as f:
+        with open(filename, 'r') as f:  # Changed 'tempfile' to filename
             source_pages = [f.read()]
     else:
         print(f"Unsupported file type: {file_type}")
@@ -45,61 +46,15 @@ def embed_document(file_id, drive, s3, bucket_name, collection):
     source_chunks = text_splitter.split_documents(source_pages)
     search_index = FAISS.from_documents(source_chunks, embedding_func)
 
-    # Convert the search index to bytes and store it in MongoDB
-    index_bytes = pickle.dumps(search_index)
-    collection.insert_one({'file_name': file_id, 'index': Binary(index_bytes)})
-
-def embed_all_docs():
-    # Create a session using your AWS credentials
-    s3 = boto3.client('s3')
-
-    # The name of the bucket
-    bucket_name = os.getenv('S3_BUCKET_NAME')
-
-    # Create a MongoDB client
-    mongo_client = MongoClient(os.getenv('MONGODB_URI'))
-    db = mongo_client[os.getenv('MONGODB_DB_NAME')]
-    collection = db[os.getenv('MONGODB_COLLECTION_NAME')]
+    try:
+        # Convert the search index to bytes
+        index_bytes = pickle.dumps(search_index)
+    except (pickle.PicklingError, AttributeError) as e:
+        print(f"Error serializing search index: {e}")
+        return
 
     try:
-        # List all the objects in the bucket
-        objects = s3.list_objects(Bucket=bucket_name)['Contents']
-
-        if objects:
-            for obj in objects:
-                print(f"Embedding {obj['Key']}...")
-                embed_document(file_id=obj['Key'], drive=s3, s3=s3, bucket_name=bucket_name, collection=collection)
-                print("Done!")
-        else:
-            raise Exception("No files found in the directory.")
-    except NoCredentialsError:
-        print("No AWS credentials were found.")
-
-def get_all_index_files():
-    # Create a session using your AWS credentials
-    aws_access_key_id = os.getenv('AWS_ACCESS_KEY_ID')
-    aws_secret_access_key = os.getenv('AWS_SECRET_ACCESS_KEY')
-
-    session = boto3.Session(
-        aws_access_key_id=aws_access_key_id,
-        aws_secret_access_key=aws_secret_access_key
-    )
-
-    s3 = session.client('s3')
-
-    # The name of the bucket
-    bucket_name = os.getenv('S3_BUCKET_NAME')
-
-    try:
-        # List all the objects in the bucket
-        objects = s3.list_objects(Bucket=bucket_name)['Contents']
-        print(objects.keys())
-        # Get the names of the files
-        file_names = [obj['Key'] for obj in objects]
-        return file_names
-    except NoCredentialsError:
-        print("No AWS credentials were found.")
-        return []  # Return an empty list if no credentials are found
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        return []  # Return an empty list if an error occurs
+        # Store it in MongoDB
+        collection.insert_one({'file_name': filename, 'index': Binary(index_bytes)})
+    except PyMongoError as e:
+        print(f"Error inserting into MongoDB: {e}")
