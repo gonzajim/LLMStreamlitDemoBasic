@@ -43,7 +43,7 @@ def embed_document(file, filename):
         print(f"Unsupported file type: {file_type}")
         return
 
-    embedding_func = OpenAIEmbeddings()
+    embedding_func = OpenAIEmbeddings(openai_api_key=os.getenv('OPENAI_API_KEY'), model="text-embedding-3-small")
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
         chunk_overlap=100,
