@@ -49,6 +49,10 @@ if prompt:
         retrival_container = st.container()
         message_placeholder = st.empty()
 
+        # Add a placeholder for the loading message
+        loading_message = st.empty()
+        loading_message.text("Estamos procesando su pregunta...")
+
         retrieval_status = retrival_container.status("**Context Retrieval**")
         queried_questions = []
         rendered_questions = set()
@@ -86,6 +90,9 @@ if prompt:
 
         retrieval_status.update(state="complete")
         message_placeholder.markdown(full_response)
+
+        # Once the response is ready, clear the loading message
+        loading_message.empty()
 
         # add the full response to the message history
         st.session_state.messages.append({"role": "assistant", "content": full_response})
