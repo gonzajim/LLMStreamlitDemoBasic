@@ -4,7 +4,7 @@ from bson.binary import Binary
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError
 import gridfs
-from langchain_community.document_loaders.pdf import PagedPDFSplitter
+from langchain_community.document_loaders import PagedPDFSplitter
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import TextLoader
 from langchain_community.vectorstores import FAISS
