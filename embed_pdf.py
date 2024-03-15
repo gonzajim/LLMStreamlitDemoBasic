@@ -61,6 +61,8 @@ def embed_document(file, filename):
     except PyMongoError as e:
         print(f"Error inserting into MongoDB: {e}")
 
+    return search_index
+
 def load_embeddings_and_index():
     try:
         # Connect to MongoDB

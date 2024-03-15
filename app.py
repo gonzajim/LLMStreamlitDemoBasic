@@ -18,7 +18,8 @@ if uploaded_file is not None:
     file_bytes = uploaded_file.read()
 
     # Call the method to save the file to MongoDB and generate index
-    embed_pdf.embed_document(file_bytes, uploaded_file.name)
+    search_index = embed_pdf.embed_document(file_bytes, uploaded_file.name)
+    st.session_state['search_index'] = search_index
 
     # Store the file in session state for later use
     st.session_state['pdf_file'] = file_bytes
@@ -64,7 +65,7 @@ if prompt:
             return qs
         
         # get the chain with the retrieval callback
-        custom_chain = get_rag_chain(retrieval_cb=retrieval_cb)
+        custom_chain = get_rag_chain(retrieval_cb=retrieval_cb, vectorstore=search_index)
     
         if "messages" in st.session_state:
             chat_history = [convert_message(m) for m in st.session_state.messages[:-1]]

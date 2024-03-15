@@ -79,8 +79,11 @@ def get_standalone_question_from_chat_history_chain():
     )
     return _inputs
 
-def get_rag_chain(retrieval_cb=None):
-    vectorstore = load_embeddings_and_index()
+def get_rag_chain(retrieval_cb=None, vectorstore=None):
+    
+    if vectorstore is None:
+        vectorstore = embed_pdf.load_embeddings_and_index()
+
     retriever = vectorstore.as_retriever()
 
     if retrieval_cb is None:
