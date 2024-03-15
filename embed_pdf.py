@@ -60,3 +60,22 @@ def embed_document(file, filename):
         collection.insert_one({'faiss_index': search_index.serialize_to_bytes()})
     except PyMongoError as e:
         print(f"Error inserting into MongoDB: {e}")
+
+def load_embeddings_and_index():
+    try:
+        # Connect to MongoDB
+        client = MongoClient(os.getenv('MONGODB_URI'))
+        db = client[os.getenv('DB_NAME')]
+        collection = db[os.getenv('MONGODB_COLLECTION_NAME')]
+
+        # Retrieve the document
+        doc = collection.find_one()
+
+        # Load the FAISS index from the document
+        faiss_index_bytes = doc['faiss_index']
+        search_index = FAISS.deserialize_from_bytes(faiss_index_bytes)
+
+        return search_index
+    except PyMongoError as e:
+        print(f"Error retrieving from MongoDB: {e}")
+        return None

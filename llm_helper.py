@@ -15,56 +15,17 @@ from pymongo.errors import PyMongoError
 from typing import Optional
 import os
 import pickle
+import embed_pdf
 
-def embed_and_store_document(source_pages, filename, collection):
-    OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-    embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=500,
-        chunk_overlap=100,
-        length_function=len,
-        is_separator_regex=False,
-        separators=["\n\n", "\n", " ", ""],
-    )
-    source_chunks = text_splitter.split_documents(source_pages)
-    search_index = FAISS.from_documents(source_chunks, embeddings)
-
-    try:
-        # Convert the search index to bytes
-        index_bytes = pickle.dumps(search_index)
-    except (pickle.PicklingError, AttributeError) as e:
-        print(f"Error serializing search index: {e}")
-        return
-
-    try:
-        # Store it in MongoDB
-        collection.insert_one({'file_name': filename, 'index': Binary(index_bytes)})
-    except PyMongoError as e:
-        print(f"Error inserting into MongoDB: {e}")
-
-def save_embeddings_to_mongodb(embeddings):
-    client = MongoClient(os.getenv('MONGODB_URI'))
-    db = client[os.getenv('DB_NAME')]
-    collection = db[os.getenv('COLLECTION_NAME')]
-
-    # Convert embeddings to binary
-    binary_embeddings = Binary(pickle.dumps(embeddings, protocol=2))  # protocol 2 for compatibility with python 2
-
-    # Save embeddings to MongoDB
-    collection.insert_one({"embeddings": binary_embeddings})
-
-def load_embeddings_from_mongodb():
-    client = MongoClient(os.getenv('MONGODB_URI'))
-    db = client[os.getenv('DB_NAME')]
-    collection = db[os.getenv('COLLECTION_NAME')]
-
-    # Load embeddings from MongoDB
-    data = collection.find_one()
-
-    # Convert embeddings from binary
-    embeddings = pickle.loads(data["embeddings"])
-
-    return embeddings
+def convert_message(m):
+    if m["role"] == "user":
+        return HumanMessage(content=m["content"])
+    elif m["role"] == "assistant":
+        return AIMessage(content=m["content"])
+    elif m["role"] == "system":
+        return SystemMessage(content=m["content"])
+    else:
+        raise ValueError(f"Unknown role {m['role']}")
 
 def format_docs(docs):
     res = ""
@@ -77,31 +38,6 @@ def format_docs(docs):
             res += f"  <{m}>{doc.metadata[m]}</{m}>\n"
         res += "</doc>\n"
     return res
-
-
-def get_search_index():
-    # load embeddings
-    from langchain.vectorstores import FAISS
-    from langchain.embeddings.openai import OpenAIEmbeddings
-
-    embeddings = load_embeddings_from_mongodb()
-
-    search_index = FAISS.load_local(
-        embeddings=embeddings,
-    )
-    return search_index
-
-
-def convert_message(m):
-    if m["role"] == "user":
-        return HumanMessage(content=m["content"])
-    elif m["role"] == "assistant":
-        return AIMessage(content=m["content"])
-    elif m["role"] == "system":
-        return SystemMessage(content=m["content"])
-    else:
-        raise ValueError(f"Unknown role {m['role']}")
-
 
 _condense_template = """Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question, in its original language.
 
@@ -144,7 +80,7 @@ def get_standalone_question_from_chat_history_chain():
     return _inputs
 
 def get_rag_chain(retrieval_cb=None):
-    vectorstore = get_search_index()
+    vectorstore = load_embeddings_and_index()
     retriever = vectorstore.as_retriever()
 
     if retrieval_cb is None:
